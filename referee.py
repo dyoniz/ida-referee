@@ -17,26 +17,26 @@ NETNODE_TAG = 'X'
 
 def is_assn(t):
     return (
-        t == idaapi.cot_asg or
-        t == idaapi.cot_asgbor or
-        t == idaapi.cot_asgxor or
-        t == idaapi.cot_asgband or
-        t == idaapi.cot_asgsub or
-        t == idaapi.cot_asgmul or
-        t == idaapi.cot_asgsshr or
-        t == idaapi.cot_asgushr or
-        t == idaapi.cot_asgsdiv or
-        t == idaapi.cot_asgudiv or
-        t == idaapi.cot_asgsmod or
-        t == idaapi.cot_asgumod)
+        t == idaapi.cot_asg
+        or t == idaapi.cot_asgbor
+        or t == idaapi.cot_asgxor
+        or t == idaapi.cot_asgband
+        or t == idaapi.cot_asgsub
+        or t == idaapi.cot_asgmul
+        or t == idaapi.cot_asgsshr
+        or t == idaapi.cot_asgushr
+        or t == idaapi.cot_asgsdiv
+        or t == idaapi.cot_asgudiv
+        or t == idaapi.cot_asgsmod
+        or t == idaapi.cot_asgumod)
 
 
 def is_incdec(t):
     return (
-        t == idaapi.cot_postinc or  # = 53,  ///< x++
-        t == idaapi.cot_postdec or  # = 54,  ///< x--
-        t == idaapi.cot_preinc  or  # = 55,  ///< ++x
-        t == idaapi.cot_predec)     # = 56,  ///< --x
+        t == idaapi.cot_postinc        # = 53,  ///< x++
+        or t == idaapi.cot_postdec     # = 54,  ///< x--
+        or t == idaapi.cot_preinc      # = 55,  ///< ++x
+        or t == idaapi.cot_predec)     # = 56,  ///< --x
 
 
 def add_struct_xrefs(cfunc):
@@ -52,10 +52,10 @@ def add_struct_xrefs(cfunc):
             try:
                 data = self.node.getblob_ea(self.cfunc.entry_ea, NETNODE_TAG)
                 if data:
-                    xrefs = eval(data)
-                    log.debug('Loaded {} xrefs'.format(len(xrefs)))
+                    xrefs = eval(data)  # pylint: disable=eval-used
+                    log.debug('Loaded %d xrefs', len(xrefs))
                     return xrefs
-            except:
+            except:  # noqa: E722  # pylint: disable=bare-except
                 log.error('Failed to load xrefs from netnode')
                 traceback.print_exc()
             return {}
@@ -65,7 +65,7 @@ def add_struct_xrefs(cfunc):
                 self.node.setblob_ea(repr(self.xrefs),
                                      self.cfunc.entry_ea,
                                      NETNODE_TAG)
-            except:
+            except:  # noqa: E722  # pylint: disable=bare-except
                 log.error('Failed to save xrefs to netnode')
                 traceback.print_exc()
 
@@ -79,7 +79,7 @@ def add_struct_xrefs(cfunc):
                         idaapi.del_dref(ea, member_id)
                 self.xrefs = {}
                 self.save()
-                log.debug('Cleared {} xrefs'.format(len(xrefs)))
+                log.debug('Cleared %d xrefs', len(xrefs))
 
         def find_addr(self, e):
             if e.ea != idaapi.BADADDR:
@@ -96,27 +96,21 @@ def add_struct_xrefs(cfunc):
             return ea
 
         def add_dref(self, ea, struct_id, flags, member_id=None):
-            if ((ea, struct_id, member_id) not in self.xrefs or
-                    flags < self.xrefs[(ea, struct_id, member_id)]):
+            if ((ea, struct_id, member_id) not in self.xrefs
+                    or flags < self.xrefs[(ea, struct_id, member_id)]):
                 self.xrefs[(ea, struct_id, member_id)] = flags
                 strname = idaapi.get_struc_name(struct_id)
                 if member_id is None:
                     idaapi.add_dref(ea, struct_id, flags)
-                    log.debug((" 0x{:X} \t"
-                               "struct {} \t"
-                               "{}").format(
-                               ea, strname, flags_to_str(flags)))
+                    log.debug(" %X \tstruct %s \t%s", ea, strname, flags_to_str(flags))
                 else:
                     idaapi.add_dref(ea, member_id, flags)
-                    log.debug((" 0x{:X} \t"
-                               "member {}.{} \t"
-                               "{}").format(
-                               ea, strname,
-                               idaapi.get_member_name(member_id),
-                               flags_to_str(flags)))
+                    log.debug(" %X \tmember %s.%s \t%s", ea, strname,
+                              idaapi.get_member_name(member_id), flags_to_str(flags))
             self.save()
 
-        def visit_expr(self, e):
+        def visit_expr(self, *args):
+            e = args[0]
             dr = idaapi.dr_R | idaapi.XREF_USER
             ea = self.find_addr(e)
 
@@ -162,9 +156,8 @@ def add_struct_xrefs(cfunc):
                         self.add_dref(ea, stid, dr, mem.id)
 
                 else:
-                    log.error(("failure from 0x{:X} "
-                               "on struct {} (id: 0x{:X}) {}").format(
-                               ea, strname, stid, flags_to_str(dr)))
+                    log.error("failure from %X "
+                              "on struct %s (id: %X) %s", ea, strname, stid, flags_to_str(dr))
 
             elif idaapi.is_lvalue(e.op) and e.type.is_struct():
                 strname = e.type.dstr()
@@ -202,14 +195,16 @@ class Referee(idaapi.plugin_t):
     wanted_name = "Referee"
     wanted_hotkey = ""
 
+    def __init__(self):
+        self.inited = False
+
     def init(self):
         if not idaapi.init_hexrays_plugin():
             return idaapi.PLUGIN_SKIP
 
         idaapi.install_hexrays_callback(callback)
-        log.info(("Hex-Rays version {} has been detected; "
-                  "{} is ready to use").format(
-                  idaapi.get_hexrays_version(), self.wanted_name))
+        log.info("Hex-Rays version %s has been detected; %s is ready to use",
+                 idaapi.get_hexrays_version(), self.wanted_name)
         self.inited = True
         return idaapi.PLUGIN_KEEP
 
