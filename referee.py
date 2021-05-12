@@ -115,8 +115,7 @@ def add_struct_xrefs(cfunc):
                     )
             self.save()
 
-        def visit_expr(self, *args):
-            e = args[0]
+        def visit_expr(self, e):
             dr = idaapi.dr_R | idaapi.XREF_USER
             ea = self.find_addr(e)
 
