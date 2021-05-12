@@ -163,7 +163,7 @@ def add_struct_xrefs(cfunc):
 
                 else:
                     log.error(
-                        "failure from %X " "on struct %s (id: %X) %s",
+                        "failure from %X " "on struct %s (id: %d) %s",
                         ea,
                         strname,
                         stid,
@@ -260,7 +260,7 @@ def flags_to_str(num):
         num ^= idaapi.XREF_DATA
     res = " | ".join(match)
     if num:
-        res += " unknown: %X" % num
+        res += " unknown flags: 0x%08X" % num
     return res
 
 
