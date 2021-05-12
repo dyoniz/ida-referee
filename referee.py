@@ -2,6 +2,7 @@
 """
 Referee creates struct xrefs for decompiled functions
 """
+import sys
 import logging
 import traceback
 
@@ -10,6 +11,7 @@ import idaapi
 logging.basicConfig(level=logging.WARN)
 log = logging.getLogger("referee")
 
+IS_PYTHON3 = sys.version_info[0] == 3
 
 NETNODE_NAME = "$ referee-xrefs"
 NETNODE_TAG = "X"
@@ -54,6 +56,11 @@ def add_struct_xrefs(cfunc):
             try:
                 data = self.node.getblob_ea(self.cfunc.entry_ea, NETNODE_TAG)
                 if data:
+                    if IS_PYTHON3:
+                        # data is just a dict, where key is a tuple of long integers
+                        # and value is an integer,
+                        # some of the integer values inside the key tuple might be None
+                        data = data.replace(b"L", b"")
                     xrefs = eval(data)  # pylint: disable=eval-used
                     log.debug("Loaded %d xrefs", len(xrefs))
                     return xrefs
@@ -64,7 +71,8 @@ def add_struct_xrefs(cfunc):
 
         def save(self):
             try:
-                self.node.setblob_ea(repr(self.xrefs), self.cfunc.entry_ea, NETNODE_TAG)
+                buf = repr(self.xrefs).encode() if IS_PYTHON3 else repr(self.xrefs)
+                self.node.setblob_ea(buf, self.cfunc.entry_ea, NETNODE_TAG)
             except:  # pylint: disable=bare-except
                 log.error("Failed to save xrefs to netnode")
                 traceback.print_exc()
