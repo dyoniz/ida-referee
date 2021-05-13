@@ -1,5 +1,7 @@
 # Referee
 
+Referee creates struct xrefs for decompiled functions.
+
 This is a python port of James Koppel's Referee IDA plugin with some updates:  
 <https://github.com/jkoppel/project-ironfist/tree/master/tools/Revitalize/Referee>
 
