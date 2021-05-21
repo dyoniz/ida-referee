@@ -4,7 +4,6 @@ import traceback
 
 import idaapi
 
-logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("referee")
 
 IS_PYTHON3 = sys.version_info[0] == 3
