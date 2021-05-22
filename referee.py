@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""
+Referee creates struct xrefs for decompiled functions
+"""
+
 import sys
 import logging
 import traceback
