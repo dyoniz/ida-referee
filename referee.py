@@ -245,10 +245,6 @@ class Referee(idaapi.plugin_t):
             idaapi.term_hexrays_plugin()
 
 
-def PLUGIN_ENTRY():
-    return Referee()
-
-
 def flags_to_str(num):
     match = []
     if num & idaapi.dr_R == idaapi.dr_R:

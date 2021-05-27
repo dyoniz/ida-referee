@@ -1,5 +1,6 @@
 .python-version
 .env
 .vscode/
-install.sh
-uninstall.sh
+*.pyc
+.DS_Store
+__pycache__/
